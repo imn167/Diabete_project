@@ -20,7 +20,7 @@ waist = round(waist*0.0254, 0.01);
 hip = round(hip*0.0254, 0.01);
 run;
 
-/* On supprime les individus dont le temps à jun est inférieur à 60 mn, ainsi que les variables indiquant
+/* On supprime les individus dont le temps à jeun est inférieur à 60 mn, ainsi que les variables indiquant
 la seconde mesure de pression arterielle. Les individus comportant des données manquantes après suppression des 2 variables sont aussi supprimés.*/
 
 data malib.Diabete_clear;

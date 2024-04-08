@@ -3,6 +3,10 @@ library(readxl)
 ##### Importation données #####
 diabete <- read_excel("4. Diabète.xlsx", sheet = "Données brutes")
 
+diab <- read_excel("Projet Etude de cas .xlsx", sheet = "Données brutes")
+
+write.csv(diab, "donnes_brutes.csv", row.names = FALSE)
+
 #### traitement données manquantes ####
 colSums(is.na(diabete))
 

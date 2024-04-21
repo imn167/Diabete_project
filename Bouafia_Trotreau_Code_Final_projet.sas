@@ -1,4 +1,37 @@
-/* Prise en main de la base de données Diabète */
+/*  
+
+BOUAFIA Imène, TROTREAU Matthieu - M2 IS - Nantes Université 
+
+Etude d'une base de données sur la prévalence de l'obésité, du diabète et de facteurs de risque
+cardiovasculaire au sein de la population Afro-américaine de Virigine Centrale en 1997.
+
+Les différentes variables du jeu de données sont : 
+
+- id: Identifiant anonyme des individus
+- chol: Cholestérol total (en mg/dL)
+- stab_glu: Niveau de glucose chez le patient (en mg/dL)
+- hdl: High Density Lipoprotein - "bon" cholestérol (en mg/dL)
+- ratio: Rapport Cholestérol/HDL
+- glyhb: Hémoglobine glyquée (en % de l’hémoglobine globale)
+- location: Ville d’inclusion du patient
+- age: Âge du patient (en années)
+- gender: Genre du patient
+- height: Taille du patient (en inches)
+- weight: Poids du patient (en pounds)
+- bp_1s: Pression sanguine Systolique – 1ère mesure (en mmHg)
+- bp_1d: Pression sanguine diastolique – 1ère mesure (en mmHg)
+- bp_2s: Pression sanguine Systolique – 2ème mesure (en mmHg)
+- bp_2d: Pression sanguine diastolique – 2ème mesure (en mmHg)
+- waist: Tour de taille (en inches)
+- hip: Tour de hanche (en inches)
+- time_ppn: Temps entre le dernier repas et les examens au laboratoire (en mn)
+
+
+*/
+
+
+
+/* 1) Prise en main de la base de données Diabète */
 
 libname malib "/home/u63585891/Diabete_project/BD";
 options fmtsearch=(malib);
@@ -90,14 +123,9 @@ title "Resumé statistiques des variables quantitatives de la table de données 
 proc means data=malib.Diabete_clear(keep= _numeric_) maxdec= 2 min q1 median mean q3 max std;
 run;
 title;
-/*=============================================================================*/
-/* ================== DECISION POUR LA VARIABLE TEMPS A JEUN ???? ============== */
-/*Ayant que des patients atteints de diabète typer II, on ne s'interessera pas au temps de jeune de chacun */
 
 PROC SGPLOT DATA = malib.Diabete_clear; SCATTER Y = glyhb X = time_ppn;
 run;
-
-/*=============================================================================*/
 
 /* Création des variables IMC, Ratio Tour de Taille/Hanche,   */
 
@@ -141,6 +169,8 @@ PROC FORMAT LIB = malib;
 run;
 /*=============================================================================*/
 
+/* 2) Analyse descriptive  */
+
 /* ANALYSE DESCRIPTIVES DE VARIABLES QUANTITATIVES */
 
 data malib.Diabete_Fin;
@@ -183,7 +213,7 @@ title "Info base de données";
 proc contents data=malib.Diabete_Fin;
 run; 
 title;
-/*Analyse descriptive des variables qualitatives */
+/* ANALYSE DESCRIPTIVES DE VARIABLES QUALITATIVES */
 /*Ordinales*/
 title "Diagramme en baton pour la variable IMC codée";
 proc freq data=malib.diabete_fin;
@@ -277,7 +307,7 @@ title;
 /*présence d'obésité / surpoids plus important chez les femmes que chez les hommes */
 
 /*representation de la distribution */
-title "Resumé statistiques des variables quantitatives de la table de données 375*16";
+title "Resumé statistique des variables quantitatives de la table de données 375*16";
 proc means data=malib.Diabete_clear(keep= _numeric_) maxdec= 2 min q1 median mean q3 max std;
 run;
 title;
@@ -390,7 +420,6 @@ proc corr data=malib.age_sorted;
 var glyhb;
 by age_code;
 run;
-IMPOSSIBLE DE FAIRE LE RAPPORT DE CORRELATION AVEC PROC CORR !!!!*/
 
 title "verification des hypothèse d'équilibre";
 proc means data=malib.diabete_fin std mean ;
@@ -450,7 +479,7 @@ Proc sgpanel data=malib.Diabete_Fin nocycleattrs;
 panelby bp_code / layout=columnlattice onepanel colheaderpos=bottom novarname; 
 vbox imc ; run;
 
-title "verification des hypothèse d'équilibre";
+title "verification des hypothèses d'équilibre";
 proc means data=malib.diabete_fin std mean ;
 class age_code;
 var imc;
@@ -476,7 +505,7 @@ run; /* Pas de différence significatives entre les groupes
 
 /*=============================================================================*/
 
-/* ANALYSE DESCRIPTIVES DEUX VARIABLES QUANTITATIVES*/
+/* ANALYSE DESCRIPTIVES DE DEUX VARIABLES QUANTITATIVES*/
 
 /* On regarde les corrélations de l'hémoglobine avec certaines variables */
 
@@ -511,16 +540,20 @@ proc sgplot data=malib.diabete_fin;
 scatter X = ratio_wh Y = glyhb / group=gender ;
 run; /* Interpretation : dès que le ratio est superieur à .8
 		il y a une présence d'individus avec un fort pourcentage d'hemoglobine
-		Dommage on peut pas tracer de vline x = .8*/
-
-
+		*/
 
 /*=============================================================================*/
 
-/* ANALYSE DESCRIPTIVES DEUX VARIABLES QUALITATIVES*/
-/* 
-JE TE LAISSE FAIRE L'ETUDE POUR 2 VARIABLES QUALITATIVES
-*/
+/* ANALYSE DESCRIPTIVES DE DEUX VARIABLES QUALITATIVES*/
+
+
+/* Différents tableaux de contingences pour les variables qualitatives + khi 2 d'indépendance */
+
+proc freq data=malib.diabete_fin;
+tables gender*IMC_code / chisq plots = freqplot;
+tables gender*Bp_code / chisq plots = freqplot;
+tables IMC_code*Bp_code/ chisq plots = freqplot;
+run;
 
 
 /* Différents tableaux de contingences pour les variables qualitatives + khi 2 d'indépendance */
@@ -533,14 +566,79 @@ run;
 
 /* data malib.diabete_fin_bp_code */
 
+/* 3) Méthodes de régression  */
+/* Analyse par régression logistique pour la variable Bp_code, avec sélection Backward */
+
 proc logistic data=malib.diabete_fin desc ;
 format Bp_code;
 
    class Bp_code ;
-   class gender (ref = 'male') / PARAM = GLM;
+   class gender (ref = 'male') / PARAM = REFERENCE;
    model Bp_code = chol hdl stab_glu glyhb age gender IMC ratio_WH / selection=backward ;
    
 run;
+
+/* on enlève col hdl pour remplacer par le ratio  */
+
+proc logistic data=malib.diabete_fin desc ;
+format Bp_code;
+
+   class Bp_code ;
+   class gender (ref = 'male') / PARAM = REFERENCE;
+   model Bp_code = ratio stab_glu glyhb age gender IMC ratio_WH / selection=backward ;
+   
+run;
+
+/* on essaie avec ratio chol hdl  */
+
+proc logistic data=malib.diabete_fin desc ;
+format Bp_code;
+
+   class Bp_code ;
+   class gender (ref = 'male') / PARAM = REFERENCE;
+   model Bp_code = ratio chol hdl stab_glu glyhb age gender IMC ratio_WH / selection=backward ;
+   
+run;
+
+/* --> Mais probablement ajout de colinéarité trop importante  */
+
+/* summary IMC  */
+
+proc means data = malib.Diabete_Fin;
+var IMC;
+run;
+
+/* deux modèles de régressions différents + estimation des proba pour les interprétations */
+
+proc logistic data=malib.diabete_fin desc ;
+format Bp_code;
+
+   class Bp_code ;
+   model Bp_code =  hdl   age  IMC  ;
+   estimate "Pr prob Bp_code = 4 at hdl=50" intercept 1 hdl 50 age 46 IMC 28.83 / ilink category='4';
+   estimate "Pr prob Bp_code = 4 at hdl=70" intercept 1 hdl 70 age 46 IMC 28.83 / ilink category='4';
+   estimate "Pr prob Bp_code >=3 at hdl=50" intercept 1 hdl 50 age 46 IMC 28.83 / ilink category='3';
+   estimate "Pr prob Bp_code >=3 at hdl=70" intercept 1 hdl 70 age 46 IMC 28.83 / ilink category='3';
+   estimate "Pr prob Bp_code >=2 at hdl=50" intercept 1 hdl 50 age 46 IMC 28.83 / ilink category='2';
+   estimate "Pr prob Bp_code >=2 at hdl=70" intercept 1 hdl 70 age 46 IMC 28.83 / ilink category='2';
+
+run;
+
+proc logistic data=malib.diabete_fin desc ;
+format Bp_code;
+
+   class Bp_code ;
+   model Bp_code =  age  IMC  ;
+   estimate "Pr prob Bp_code = 4 at age = 46 and IMC=28.83" intercept 1 age 46 IMC 28.83 / ilink category='4';
+   estimate "Pr prob Bp_code = 4 at age = 46 and IMC=35" intercept 1 age 46 IMC 35 / ilink category='4';
+   estimate "Pr prob Bp_code >=3 at age = 46 and IMC=28.83" intercept 1 age 46 IMC 28.83 / ilink category='3';
+   estimate "Pr prob Bp_code >=3 at age = 46 and IMC=35" intercept 1 age 46 IMC 35 / ilink category='3';
+   estimate "Pr prob Bp_code >=2 at age = 46 and IMC=28.83" intercept 1 age 46 IMC 28.83 / ilink category='2';
+   estimate "Pr prob Bp_code >=2 at age = 46 and IMC=35" intercept 1 age 46 IMC 35 / ilink category='2';
+
+run;
+
+/* Analyse par régression linéaire de la variable glyhb, avec sélection Backward */
 
 proc reg data=malib.diabete_fin;
 model glyhb = chol hdl stab_glu age ratio_WH height weight bp_1s bp_1d / selection=backward;

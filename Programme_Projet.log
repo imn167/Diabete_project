@@ -1,0 +1,2482 @@
+ 
+ 1          OPTIONS NONOTES NOSTIMER NOSOURCE NOSYNTAXCHECK;
+ NOTE: les instructions ODS dans l'environnement SAS Studio risquent de désactiver certaines fonctionnalités de sortie.
+ 69         
+ 70         /* Prise en main de la base de données Diabète */
+ 71         
+ 72         libname malib "/home/u63585891/Diabete_project/BD";
+ NOTE: Libref MALIB was successfully assigned as follows: 
+       Engine:        V9 
+       Physical Name: /home/u63585891/Diabete_project/BD
+ 73         options fmtsearch=(malib);
+ 74         
+ 75         PROC IMPORT out=malib.Diabete(drop= S)
+ 76         datafile = "/home/u63585891/Diabete_project/4. Diabète.xlsx"
+ 77         dbms=XLSX
+ 78         replace;
+ 79         sheet="Données brutes" ;
+ 80         RUN;
+ 
+ NOTE: One or more variables were converted because the data type is not supported by the V9 engine. For more details, run with 
+       options MSGLEVEL=I.
+ NOTE: The import data set has 403 observations and 19 variables.
+ NOTE: MALIB.DIABETE data set was successfully created.
+ NOTE: PROCEDURE IMPORT a utilisé (Durée totale du traitement) :
+       real time           0.09 seconds
+       user cpu time       0.08 seconds
+       system cpu time     0.00 seconds
+       memory              3424.81k
+       OS Memory           22264.00k
+       Timestamp           21/04/2024 05:36:08 PM
+       Step Count                        24  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     1072
+       Page Swaps                        0
+       Voluntary Context Switches        53
+       Involuntary Context Switches      0
+       Block Input Operations            32
+       Block Output Operations           264
+       
+ 
+ 81         
+ 82         ods pdf file="/home/u63585891/Diabete_project/Rapport.pdf" ;
+ NOTE: Writing ODS PDF output to DISK destination "/home/u63585891/Diabete_project/Rapport.pdf", printer "PDF".
+ 83         /* 403 individus et 19 (18 normalement, ya une variable "S" en trop) variables actuellement */
+ 84         
+ 85         /* On convertit les pounds et inches en kg et m : */
+ 86         
+ 87         data malib.Diabete;
+ 88         set malib.DIABETE;
+ 89         weight = round(weight*0.4536,0.01);
+ 90         height = round(height*0.0254, 0.01);
+ 91         waist = round(waist*0.0254, 0.01);
+ 92         hip = round(hip*0.0254, 0.01);
+ 93         run;
+ 
+ NOTE: Missing values were generated as a result of performing an operation on missing values.
+       Each place is given by: (Number of times) at (Line):(Column).
+       1 à 89:10   1 à 89:22   5 à 90:10   5 à 90:22   2 à 91:9    2 à 91:20   2 à 92:7    2 à 92:16   
+ NOTE: There were 403 observations read from the data set MALIB.DIABETE.
+ NOTE: The data set MALIB.DIABETE has 403 observations and 18 variables.
+ NOTE: DATA statement a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.00 seconds
+       system cpu time     0.00 seconds
+       memory              970.09k
+       OS Memory           23724.00k
+       Timestamp           21/04/2024 05:36:08 PM
+       Step Count                        25  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     189
+       Page Swaps                        0
+       Voluntary Context Switches        45
+       Involuntary Context Switches      0
+       Block Input Operations            288
+       Block Output Operations           272
+       
+ 
+ 94         
+ 95         /* Traitement des données manquantes */
+ 96         title "Nombre de valeurs manquantes pour chaque variable";
+ 97         proc means data=malib.diabete NMISS;
+ 98         title;
+ 99         
+ 100        run;
+ 
+ NOTE: There were 403 observations read from the data set MALIB.DIABETE.
+ NOTE: PROCEDURE MEANS a utilisé (Durée totale du traitement) :
+       real time           0.03 seconds
+       user cpu time       0.03 seconds
+       system cpu time     0.00 seconds
+       memory              7993.40k
+       OS Memory           30652.00k
+       Timestamp           21/04/2024 05:36:08 PM
+       Step Count                        26  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     2233
+       Page Swaps                        0
+       Voluntary Context Switches        39
+       Involuntary Context Switches      0
+       Block Input Operations            288
+       Block Output Operations           0
+       
+ 
+ 101        /*enormement de données manquantes pour les variables bp_2S et bp_2D
+ 102        
+ 103        On compare les valeurs pour voir si il y a un changement dans les 2e prises de pression*/
+ 104        
+ 105        data malib.pression;
+ 106        set malib.Diabete(keep= bp_1s bp_2s bp_1d bp_2d);
+ 107        if cmiss(of _all_) then delete;
+ 108        run;
+ 
+ NOTE: There were 403 observations read from the data set MALIB.DIABETE.
+ NOTE: The data set MALIB.PRESSION has 141 observations and 4 variables.
+ NOTE: DATA statement a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.00 seconds
+       system cpu time     0.00 seconds
+       memory              948.59k
+       OS Memory           26028.00k
+       Timestamp           21/04/2024 05:36:08 PM
+       Step Count                        27  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     150
+       Page Swaps                        0
+       Voluntary Context Switches        45
+       Involuntary Context Switches      0
+       Block Input Operations            32
+       Block Output Operations           264
+       
+ 
+ 109        title "Valeurs maximums et minimums pour les variables de pression sanguine";
+ 110        proc means data=malib.pression min max maxdec=2 ;
+ 111        var  bp_1S bp_2S bp_1D bp_2D;
+ 112        run;
+ 
+ NOTE: There were 141 observations read from the data set MALIB.PRESSION.
+ NOTE: PROCEDURE MEANS a utilisé (Durée totale du traitement) :
+       real time           0.02 seconds
+       user cpu time       0.02 seconds
+       system cpu time     0.01 seconds
+       memory              6695.62k
+       OS Memory           31420.00k
+       Timestamp           21/04/2024 05:36:08 PM
+       Step Count                        28  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     1503
+       Page Swaps                        0
+       Voluntary Context Switches        28
+       Involuntary Context Switches      0
+       Block Input Operations            288
+       Block Output Operations           0
+       
+ 
+ 113        title;
+ 114        
+ 115        proc sgplot data=malib.pression;
+ 116        title "Comparaison de la distribution des pressions systoliques pour les données non manquantes";
+ 117        density bp_1s / type= kernel legendlabel= "systolique 1 ";
+ 118        density bp_2s / type= kernel legendlabel= "systolique 2";
+ 119        run;
+ 
+ 119      !      title;
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           2.14 seconds
+       user cpu time       0.06 seconds
+       system cpu time     0.02 seconds
+       memory              15032.31k
+       OS Memory           40360.00k
+       Timestamp           21/04/2024 05:36:10 PM
+       Step Count                        29  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     5031
+       Page Swaps                        0
+       Voluntary Context Switches        390
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           760
+       
+ NOTE: There were 141 observations read from the data set MALIB.PRESSION.
+ 
+ 120        
+ 121        proc sgplot data=malib.pression;
+ 122        title "Comparaison de la distribution des pressions systoliques pour les données non manquantes";
+ 123        density bp_1d / type= kernel legendlabel= "diastolique 1 ";
+ 124        density bp_2d / type= kernel legendlabel= "diastolique 2";
+ 125        run;
+ 
+ 125      !      title;
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.19 seconds
+       user cpu time       0.05 seconds
+       system cpu time     0.00 seconds
+       memory              2397.12k
+       OS Memory           41776.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        30  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     576
+       Page Swaps                        0
+       Voluntary Context Switches        221
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           560
+       
+ NOTE: There were 141 observations read from the data set MALIB.PRESSION.
+ 
+ 126        
+ 127        /* Les valeurs sont quasi-similaires (plus de disparité pour les pressions diastoliques)
+ 128        donc la suppression des 2e pressions n'impliquera pas une grande perte
+ 129        d'informations */
+ 130        
+ 131        data malib.missing(keep= miss_n);
+ 132          set malib.Diabete(drop=bp_2s bp_2d) ;
+ 133          miss_n = cmiss(of chol -- time_ppn);
+ 134        run;
+ 
+ NOTE: There were 403 observations read from the data set MALIB.DIABETE.
+ NOTE: The data set MALIB.MISSING has 403 observations and 1 variables.
+ NOTE: DATA statement a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.00 seconds
+       system cpu time     0.00 seconds
+       memory              961.56k
+       OS Memory           41388.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        31  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     154
+       Page Swaps                        0
+       Voluntary Context Switches        46
+       Involuntary Context Switches      0
+       Block Input Operations            32
+       Block Output Operations           264
+       
+ 
+ 135        
+ 136        title "Décompte des nombre de valeurs manquantes chez chaque individus";
+ 137        proc freq data=malib.missing; /* voir proc mi qui donne un meilleur résumé peut-être*/
+ 138        run;
+ 
+ NOTE: There were 403 observations read from the data set MALIB.MISSING.
+ NOTE: PROCEDURE FREQ a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              1042.59k
+       OS Memory           41388.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        32  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     222
+       Page Swaps                        0
+       Voluntary Context Switches        19
+       Involuntary Context Switches      1
+       Block Input Operations            288
+       Block Output Operations           280
+       
+ 
+ 139        title;
+ 140        
+ 141        /* On supprimeles variables indiquant la seconde mesure de pression arterielle.
+ 142        Les individus comportant des données manquantes après suppression des 2 variables sont aussi supprimés car
+ 143        ça ne concerne que 28 individus en tout*/
+ 144        
+ 145        
+ 146        data malib.Diabete_clear(drop= id);
+ 147        set malib.DIABETE(drop = bp_2s bp_2d );
+ 148        if cmiss(of _all_) then delete;
+ 149        id_char = put(id, 8.); /*conversion de la variable id en character */
+ 150        run;
+ 
+ NOTE: There were 403 observations read from the data set MALIB.DIABETE.
+ NOTE: The data set MALIB.DIABETE_CLEAR has 375 observations and 16 variables.
+ NOTE: DATA statement a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              974.75k
+       OS Memory           41644.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        33  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     131
+       Page Swaps                        0
+       Voluntary Context Switches        48
+       Involuntary Context Switches      0
+       Block Input Operations            32
+       Block Output Operations           264
+       
+ 
+ 151        title "Info base de données";
+ 152        proc contents data=malib.Diabete_clear;
+ 153        title;
+ 154        
+ 155        /* Nous avons maintenant un jeu de données de 375 individus 16 variables */
+ 156        title "Resumé statistique des variables quantitatives de la table de données 375*16";
+ 
+ NOTE: PROCEDURE CONTENTS a utilisé (Durée totale du traitement) :
+       real time           0.04 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              1540.43k
+       OS Memory           41644.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        34  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     429
+       Page Swaps                        0
+       Voluntary Context Switches        22
+       Involuntary Context Switches      0
+       Block Input Operations            288
+       Block Output Operations           32
+       
+ 
+ 157        proc means data=malib.Diabete_clear(keep= _numeric_) maxdec= 2 min q1 median mean q3 max std;
+ 158        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_CLEAR.
+ NOTE: PROCEDURE MEANS a utilisé (Durée totale du traitement) :
+       real time           0.05 seconds
+       user cpu time       0.05 seconds
+       system cpu time     0.00 seconds
+       memory              6508.28k
+       OS Memory           46524.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        35  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     1448
+       Page Swaps                        0
+       Voluntary Context Switches        25
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           0
+       
+ 
+ 159        title;
+ 160        /*=============================================================================*/
+ 161        /* ================== DECISION POUR LA VARIABLE TEMPS A JEUN ============== */
+ 162        /*Ayant que des patients atteints de diabète typer II, on ne s'interessera pas au temps de jeune de chacun */
+ 163        
+ 164        PROC SGPLOT DATA = malib.Diabete_clear; SCATTER Y = glyhb X = time_ppn;
+ 165        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.15 seconds
+       user cpu time       0.03 seconds
+       system cpu time     0.00 seconds
+       memory              1821.06k
+       OS Memory           42544.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        36  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     321
+       Page Swaps                        0
+       Voluntary Context Switches        184
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           456
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_CLEAR.
+ 
+ 166        
+ 167        /*=============================================================================*/
+ 168        
+ 169        /* Création des variables IMC, Ratio Tour de Taille/Hanche,   */
+ 170        
+ 171        data malib.Diabete_Fin;
+ 172        set malib.diabete_clear;
+ 173        IMC = round(weight/(height**2),0.01);
+ 174        Ratio_WH = round(waist/hip,0.01);
+ 175        ratio = round(ratio,0.01);
+ 176        glyhb = round(glyhb,0.01);
+ 177        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_CLEAR.
+ NOTE: The data set MALIB.DIABETE_FIN has 375 observations and 18 variables.
+ NOTE: DATA statement a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              971.46k
+       OS Memory           41900.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        37  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     116
+       Page Swaps                        0
+       Voluntary Context Switches        43
+       Involuntary Context Switches      0
+       Block Input Operations            32
+       Block Output Operations           264
+       
+ 
+ 178        
+ 179        /* Création des variables _Code pour l'IMC, la tension arterielle, et Age ainsi que leur format */
+ 180        
+ 181        PROC FORMAT LIB = malib;
+ 182        
+ 182      !  Value Decode_IMC
+ 183        1 = "Anorexie"
+ 184        2 = "Maigreur"
+ 185        3 = "Corpulence normale"
+ 186        4 = "Surpoids"
+ 187        5 = "Obésité modérée"
+ 188        6 = "Obésité sévère"
+ 189        7 = "Obésité morbide";
+ NOTE: Format DECODE_IMC is already on the library MALIB.FORMATS.
+ NOTE: Format DECODE_IMC has been written to MALIB.FORMATS.
+ 190        run;
+ 
+ NOTE: PROCEDURE FORMAT a utilisé (Durée totale du traitement) :
+       real time           0.00 seconds
+       user cpu time       0.00 seconds
+       system cpu time     0.01 seconds
+       memory              302.78k
+       OS Memory           41380.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        38  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     61
+       Page Swaps                        0
+       Voluntary Context Switches        14
+       Involuntary Context Switches      0
+       Block Input Operations            48
+       Block Output Operations           56
+       
+ 
+ 191        
+ 192        PROC FORMAT LIB = malib;
+ 193        
+ 193      !  Value Decode_BP
+ 194        1 = "Tension artérielle normale"
+ 195        2 = "Tension artérielle élevée"
+ 196        3 = "Hypertension artérielle de stade 1"
+ 197        4 = "Hypertension artérielle de stade 2";
+ NOTE: Format DECODE_BP is already on the library MALIB.FORMATS.
+ NOTE: Format DECODE_BP has been written to MALIB.FORMATS.
+ 198        run;
+ 
+ NOTE: PROCEDURE FORMAT a utilisé (Durée totale du traitement) :
+       real time           0.00 seconds
+       user cpu time       0.00 seconds
+       system cpu time     0.00 seconds
+       memory              242.81k
+       OS Memory           41380.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        39  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     14
+       Page Swaps                        0
+       Voluntary Context Switches        9
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           64
+       
+ 
+ 199        
+ 200        PROC FORMAT LIB = malib;
+ 201        
+ 201      !  Value Decode_time
+ 202        1 = "moins 1 heure"
+ 203        2 = "entre 1h 2h "
+ 204        3 = "entre 2h et 4h"
+ 205        4 = "entre 4h et 8h"
+ 206        5 = "entre 8h et 16h"
+ 207        6 = "plus de 16 heures";
+ NOTE: Format DECODE_TIME is already on the library MALIB.FORMATS.
+ NOTE: Format DECODE_TIME has been written to MALIB.FORMATS.
+ 208        run;
+ 
+ NOTE: PROCEDURE FORMAT a utilisé (Durée totale du traitement) :
+       real time           0.00 seconds
+       user cpu time       0.00 seconds
+       system cpu time     0.00 seconds
+       memory              241.65k
+       OS Memory           41380.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        40  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     14
+       Page Swaps                        0
+       Voluntary Context Switches        10
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           56
+       
+ 
+ 209        /*=============================================================================*/
+ 210        
+ 211        /* ANALYSE DESCRIPTIVES DE VARIABLES QUANTITATIVES */
+ 212        
+ 213        data malib.Diabete_Fin;
+ 214        set malib.Diabete_Fin;
+ 215        
+ 216        if IMC <= 16.5 then IMC_Code = 1;
+ 217        if 16.5 < IMC <= 18.5 then IMC_Code = 2;
+ 218        if 18.5 < IMC <= 25 then IMC_Code = 3;
+ 219        if 25 < IMC <= 30 then IMC_Code = 4;
+ 220        if 30 < IMC <= 35 then IMC_Code = 5;
+ 221        if 35 < IMC <= 40 then IMC_Code = 6;
+ 222        if 40 < IMC  then IMC_Code = 7;
+ 223        
+ 224        if (bp_1s < 120) and (bp_1d < 80) then Bp_Code = 1;
+ 225        if (120 <= bp_1s <= 129) and (bp_1d < 80) then Bp_Code = 2;
+ 226        if (130 <= bp_1s <= 139) or (80 <= bp_1d <= 89) then Bp_Code = 3;
+ 227        if (bp_1s >= 140) or (bp_1d >= 90) then Bp_Code = 4;
+ 228        
+ 229        if age <= 30 then age_Code = 1;
+ 230        if 30 < age <= 40 then age_Code = 2;
+ 231        if 40 < age <= 50 then age_Code = 3;
+ 232        if 50 < age <= 60 then age_Code = 4;
+ 233        if 60 < age <= 70 then age_Code = 5;
+ 234        if 70 < age then age_Code = 6;
+ 235        
+ 236        if time_ppn <= 60 then time_Code = 1;
+ 237        if 60 < time_ppn <= 120 then time_Code = 2;
+ 238        if 120 < time_ppn <= 240 then time_Code = 3;
+ 239        if 240 < time_ppn <= 480 then time_Code = 4;
+ 240        if 480 < time_ppn <= 960 then time_Code = 5;
+ 241        if 960 < time_ppn then time_Code = 6;
+ 242        
+ 243        format IMC_Code Decode_IMC. Bp_Code Decode_BP.  age_code Decode_age. time_code Decode_time.;
+ 244        
+ 245        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: The data set MALIB.DIABETE_FIN has 375 observations and 22 variables.
+ NOTE: DATA statement a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              999.71k
+       OS Memory           41900.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        41  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     116
+       Page Swaps                        0
+       Voluntary Context Switches        53
+       Involuntary Context Switches      0
+       Block Input Operations            288
+       Block Output Operations           272
+       
+ 
+ 246        
+ 247        
+ 248        /* --------- Base de données 375 individus et 21 variables ------------------*/
+ 249        title "Info base de données";
+ 250        proc contents data=malib.Diabete_Fin;
+ 251        run;
+ 
+ NOTE: PROCEDURE CONTENTS a utilisé (Durée totale du traitement) :
+       real time           0.05 seconds
+       user cpu time       0.05 seconds
+       system cpu time     0.00 seconds
+       memory              1489.50k
+       OS Memory           41900.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        42  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     96
+       Page Swaps                        0
+       Voluntary Context Switches        12
+       Involuntary Context Switches      0
+       Block Input Operations            288
+       Block Output Operations           72
+       
+ 
+ 252        title;
+ 253        
+ 254        
+ 255        /*---------------------- Analyse descriptive des variables qualitatives ------------- */
+ 256        /*Ordinales*/
+ 257        
+ 258        
+ 259        
+ 260        title "Diagramme en baton pour la variable IMC codée";
+ 261        proc freq data=malib.diabete_fin;
+ 262        tables IMC_code;
+ 263        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE FREQ a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.01 seconds
+       memory              838.37k
+       OS Memory           41900.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        43  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     128
+       Page Swaps                        0
+       Voluntary Context Switches        18
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           272
+       
+ 
+ 264        
+ 265        proc sgplot data=malib.diabete_fin;
+ 266        vbar imc_code ;
+ 267        run;
+ 
+ 267      !      /*plus de personne en situation de surpoid voire obesité */
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.17 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              2288.06k
+       OS Memory           43184.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        44  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     642
+       Page Swaps                        0
+       Voluntary Context Switches        192
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           432
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 268        title;
+ 269        /*---------*/
+ 270        title "Diagramme en baton pour la variable Age codée";
+ 271        proc freq data=malib.diabete_fin;
+ 272        tables age_code;
+ 273        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE FREQ a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              847.50k
+       OS Memory           42156.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        45  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     123
+       Page Swaps                        0
+       Voluntary Context Switches        14
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           272
+       
+ 
+ 274        
+ 275        proc sgplot data=malib.diabete_fin;
+ 276        vbar age_code ;
+ 277        run;
+ 
+ 277      !      /* une repartition équilibrée : quasi même effectif dans chaque tranche d'age */
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.11 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.01 seconds
+       memory              2352.90k
+       OS Memory           43184.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        46  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     520
+       Page Swaps                        0
+       Voluntary Context Switches        190
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           408
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 278        title;
+ 279        /*---------*/
+ 280        title "Diagramme en baton pour la variable Hypertension codée";
+ 281        proc freq data=malib.diabete_fin;
+ 282        tables bp_code;
+ 283        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE FREQ a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              851.00k
+       OS Memory           42412.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        47  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     123
+       Page Swaps                        0
+       Voluntary Context Switches        20
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           264
+       
+ 
+ 284        
+ 285        proc sgplot data=malib.diabete_fin;
+ 286        vbar bp_code ; /*Enormement d'hypertension arterielle de stade 2 */
+ 287        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.10 seconds
+       user cpu time       0.03 seconds
+       system cpu time     0.00 seconds
+       memory              2387.12k
+       OS Memory           43440.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        48  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     511
+       Page Swaps                        0
+       Voluntary Context Switches        188
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           416
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 288        title;
+ 289        /* nominale */
+ 290        proc freq data=malib.Diabete_Fin;
+ 291        tables gender;
+ 292        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE FREQ a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              834.00k
+       OS Memory           42412.00k
+       Timestamp           21/04/2024 05:36:11 PM
+       Step Count                        49  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     123
+       Page Swaps                        0
+       Voluntary Context Switches        12
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           264
+       
+ 
+ 293        
+ 294        proc sgplot data=malib.diabete_fin;
+ 295        title "Diagramme en baton pour la variable ";
+ 296        vbar gender ; /*Enormement d'hypertension arterielle de stade 2 */
+ 297        run;
+ 
+ 297      !      /* plus de femmes que d'hommes */
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.09 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.01 seconds
+       memory              2532.75k
+       OS Memory           43440.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        50  Switch Count  3
+       Page Faults                       0
+       Page Reclaims                     488
+       Page Swaps                        0
+       Voluntary Context Switches        203
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           408
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 298        
+ 299        proc freq data=malib.Diabete_Fin;
+ 300        tables location;
+ 301        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE FREQ a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              830.12k
+       OS Memory           42412.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        51  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     125
+       Page Swaps                        0
+       Voluntary Context Switches        19
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           272
+       
+ 
+ 302        
+ 303        proc sgplot data=malib.diabete_fin;
+ 304        title "Diagramme en baton pour la variable ";
+ 305        vbar location ; /*Enormement d'hypertension arterielle de stade 2 */
+ 306        run;
+ 
+ 306      !      /* même proportion*/
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.09 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              2398.67k
+       OS Memory           43180.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        52  Switch Count  3
+       Page Faults                       0
+       Page Reclaims                     454
+       Page Swaps                        0
+       Voluntary Context Switches        200
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           400
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 307        
+ 308        
+ 309        
+ 310        /*=============================================================================*/
+ 311        
+ 312        /* ANALYSE DESCRIPTIVES DE VARIABLES QUANTITATIVES */
+ 313        
+ 314        /*tentative d'un boxplot pour toutes les variables (même methode que dans R) */
+ 315        proc sort data=malib.Diabete_Fin(keep= stab_glu hdl bp_1s bp_1d id_char) out=malib.diabete_sorted;
+ 316        by id_char;
+ 317        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: The data set MALIB.DIABETE_SORTED has 375 observations and 5 variables.
+ NOTE: PROCEDURE SORT a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.00 seconds
+       system cpu time     0.00 seconds
+       memory              1239.65k
+       OS Memory           42672.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        53  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     261
+       Page Swaps                        0
+       Voluntary Context Switches        43
+       Involuntary Context Switches      0
+       Block Input Operations            32
+       Block Output Operations           288
+       
+ 
+ 318        
+ 319        proc transpose data=malib.Diabete_sorted out=malib.diabete_t;
+ 320        by id_char;
+ 321        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_SORTED.
+ NOTE: The data set MALIB.DIABETE_T has 1500 observations and 4 variables.
+ NOTE: PROCEDURE TRANSPOSE a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.00 seconds
+       system cpu time     0.00 seconds
+       memory              2802.50k
+       OS Memory           44464.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        54  Switch Count  10
+       Page Faults                       0
+       Page Reclaims                     252
+       Page Swaps                        0
+       Voluntary Context Switches        82
+       Involuntary Context Switches      0
+       Block Input Operations            320
+       Block Output Operations           528
+       
+ 
+ 322        
+ 323        data malib.diabete_t;
+ 324        set malib.diabete_t;
+ 325        label _name_ = "Variable";
+ 326        label col1 = "Value";
+ 327        run;
+ 
+ NOTE: There were 1500 observations read from the data set MALIB.DIABETE_T.
+ NOTE: The data set MALIB.DIABETE_T has 1500 observations and 4 variables.
+ NOTE: DATA statement a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              961.84k
+       OS Memory           42668.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        55  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     105
+       Page Swaps                        0
+       Voluntary Context Switches        48
+       Involuntary Context Switches      0
+       Block Input Operations            288
+       Block Output Operations           264
+       
+ 
+ 328        
+ 329        title "Boite à moustache";
+ 330        proc sgplot data=malib.diabete_t;
+ 331        yaxis label= "Valeur ";
+ 332        vbox col1 / group=_name_ ;
+ 333        run;
+ 
+ 333      !     title;
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.18 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.01 seconds
+       memory              2460.71k
+       OS Memory           43312.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        56  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     345
+       Page Swaps                        0
+       Voluntary Context Switches        924
+       Involuntary Context Switches      0
+       Block Input Operations            288
+       Block Output Operations           496
+       
+ NOTE: There were 1500 observations read from the data set MALIB.DIABETE_T.
+ 
+ 334        
+ 335        
+ 336        /*representation de la distribution */
+ 337        title "Resumé statistique des variables quantitatives de la table de données de 375 individus et 21 variables";
+ 338        proc means data=malib.Diabete_clear(keep= _numeric_) maxdec= 2 min q1 median mean q3 max std;
+ 339        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_CLEAR.
+ NOTE: PROCEDURE MEANS a utilisé (Durée totale du traitement) :
+       real time           0.05 seconds
+       user cpu time       0.06 seconds
+       system cpu time     0.00 seconds
+       memory              6588.00k
+       OS Memory           47548.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        57  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     1367
+       Page Swaps                        0
+       Voluntary Context Switches        23
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           16
+       
+ 
+ 340        title;
+ 341        
+ 342        
+ 343        
+ 344        PROC UNIVARIATE DATA = malib.Diabete_Fin NOPRINT; VAR stab_glu;
+ 345        HISTOGRAM stab_glu;
+ 346        RUN;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.12 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.01 seconds
+       memory              7037.62k
+       OS Memory           48132.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        58  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1683
+       Page Swaps                        0
+       Voluntary Context Switches        182
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           400
+       
+ 
+ 347        PROC UNIVARIATE DATA = malib.Diabete_Fin NOPRINT; VAR hdl;
+ 348        HISTOGRAM hdl;
+ 349        RUN;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.10 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              6861.14k
+       OS Memory           47876.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        59  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1529
+       Page Swaps                        0
+       Voluntary Context Switches        181
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           384
+       
+ 
+ 350        PROC UNIVARIATE DATA = malib.Diabete_Fin NOPRINT; VAR bp_1s;
+ 351        HISTOGRAM bp_1s;
+ 352        RUN;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.10 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              6870.35k
+       OS Memory           47876.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        60  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1506
+       Page Swaps                        0
+       Voluntary Context Switches        179
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           408
+       
+ 
+ 353        PROC UNIVARIATE DATA = malib.Diabete_Fin NOPRINT; VAR bp_1d;
+ 354        HISTOGRAM bp_1d;
+ 355        RUN;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.09 seconds
+       user cpu time       0.05 seconds
+       system cpu time     0.01 seconds
+       memory              6866.20k
+       OS Memory           47876.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        61  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1505
+       Page Swaps                        0
+       Voluntary Context Switches        179
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           384
+       
+ 
+ 356        
+ 357        PROC UNIVARIATE DATA = malib.Diabete_Fin NOPRINT; VAR ratio;
+ 358        HISTOGRAM ratio;
+ 359        RUN;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.09 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              6917.53k
+       OS Memory           48132.00k
+       Timestamp           21/04/2024 05:36:12 PM
+       Step Count                        62  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1511
+       Page Swaps                        0
+       Voluntary Context Switches        179
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           392
+       
+ 
+ 360        
+ 361        PROC UNIVARIATE DATA = malib.Diabete_Fin NOPRINT; VAR ratio_wh;
+ 362        HISTOGRAM ratio_wh ;
+ 363        RUN;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.12 seconds
+       user cpu time       0.05 seconds
+       system cpu time     0.01 seconds
+       memory              6856.15k
+       OS Memory           47876.00k
+       Timestamp           21/04/2024 05:36:13 PM
+       Step Count                        63  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1527
+       Page Swaps                        0
+       Voluntary Context Switches        179
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           384
+       
+ 
+ 364        
+ 365        PROC UNIVARIATE DATA = malib.Diabete_Fin NOPRINT; VAR glyhb;
+ 366        HISTOGRAM glyhb;
+ 367        RUN;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.10 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.01 seconds
+       memory              6947.56k
+       OS Memory           48132.00k
+       Timestamp           21/04/2024 05:36:13 PM
+       Step Count                        64  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1512
+       Page Swaps                        0
+       Voluntary Context Switches        179
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           392
+       
+ 
+ 368        
+ 369        
+ 370        proc sgpanel data=malib.diabete_t;
+ 371        panelby _name_ ;
+ 372        histogram col1 ;
+ 373        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.28 seconds
+       user cpu time       0.06 seconds
+       system cpu time     0.01 seconds
+       memory              3195.54k
+       OS Memory           44212.00k
+       Timestamp           21/04/2024 05:36:13 PM
+       Step Count                        65  Switch Count  28
+       Page Faults                       0
+       Page Reclaims                     1248
+       Page Swaps                        0
+       Voluntary Context Switches        571
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           1872
+       
+ NOTE: There were 1500 observations read from the data set MALIB.DIABETE_T.
+ 
+ 374        
+ 375        /*
+ 376        - Variable glucose : moins de 25% avec glucose important sinon moins de 75% avec glucose inf à 100mg/dl
+ 377        
+ 378        -Variable HDL : 25% avec un faible taux hdl < 40  et +25% dans la norme (40-60)
+ 379        
+ 380        Peut-être faire une variable catégorielle pour temps à jeun et analyser dessus
+ 381        
+ 382        - Variable glyhb : pas de dépendance au jeune car bilan sur 3 mois du glucose, suprenant car seulement
+ 383        un faible pourcentage (moins de 25%) ont un bilan d'hémoglobine glyquée superieur à 6%
+ 384        
+ 385        Peut-être que la présence de diabète est plus dû au problème cardiovasculaire car il y a un effectif
+ 386        importante de personne en surpoid / obésité
+ 387        */
+ 388        
+ 389        /*=============================================================================*/
+ 390        
+ 391        /* ANALYSE DESCRIPTIVES DE VARIABLES QUANTITATIVES ET QUALITATIVES*/
+ 392        title "distribution du taux de glucose selon le temps de jeune";
+ 393        proc sgpanel data=malib.diabete_fin;
+ 394        panelby time_code;
+ 395        histogram stab_glu ;
+ 396        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.32 seconds
+       user cpu time       0.08 seconds
+       system cpu time     0.01 seconds
+       memory              3578.75k
+       OS Memory           44472.00k
+       Timestamp           21/04/2024 05:36:13 PM
+       Step Count                        66  Switch Count  50
+       Page Faults                       0
+       Page Reclaims                     1304
+       Page Swaps                        0
+       Voluntary Context Switches        497
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           3520
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 397        title;
+ 398        
+ 399        title "Distribution du taux HDL selon le temps de jeune";
+ 400        proc sgpanel data=malib.diabete_fin;
+ 401        panelby time_code;
+ 402        histogram hdl ;
+ 403        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.25 seconds
+       user cpu time       0.08 seconds
+       system cpu time     0.01 seconds
+       memory              3502.21k
+       OS Memory           44472.00k
+       Timestamp           21/04/2024 05:36:14 PM
+       Step Count                        67  Switch Count  50
+       Page Faults                       0
+       Page Reclaims                     1337
+       Page Swaps                        0
+       Voluntary Context Switches        492
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           3520
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 404        title;
+ 405        
+ 406        /* Prevésible mais plus le temps à jeun est grand et plus les taux de glucose sont moins important
+ 407        neanmoins il y a présence d'individus avec des taux importants et des périodes de jeune préconisées (8h>)*/
+ 408        
+ 409        
+ 410        title "Distribution du ratio taille - hanche en fonction du genre";
+ 411        proc sgpanel data=malib.diabete_fin;
+ 412        panelby gender / layout=columnlattice onepanel colheaderpos=bottom novarname;
+ 413        histogram ratio_wh ;
+ 414        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.18 seconds
+       user cpu time       0.06 seconds
+       system cpu time     0.01 seconds
+       memory              3378.65k
+       OS Memory           44472.00k
+       Timestamp           21/04/2024 05:36:14 PM
+       Step Count                        68  Switch Count  25
+       Page Faults                       0
+       Page Reclaims                     908
+       Page Swaps                        0
+       Voluntary Context Switches        393
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           1864
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 415        title;
+ 416        
+ 417        
+ 418        title "Distribution de l'hémoglobine glyquée en fonction des tranches d'age";
+ 419        proc sgpanel data=malib.diabete_fin;
+ 420        panelby age_code / columns= 1;
+ 421        histogram glyhb ;
+ 422        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.42 seconds
+       user cpu time       0.13 seconds
+       system cpu time     0.02 seconds
+       memory              3544.98k
+       OS Memory           44472.00k
+       Timestamp           21/04/2024 05:36:14 PM
+       Step Count                        69  Switch Count  49
+       Page Faults                       0
+       Page Reclaims                     1809
+       Page Swaps                        0
+       Voluntary Context Switches        771
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           3752
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 423        title;
+ 424        
+ 425        
+ 426        
+ 427        /* Le passage dans les tranches d'âge de plus de 40 ans montre la présence de glyhb > 7%
+ 428        Le diabète type 2 semble être lié à l'age
+ 429        */
+ 430        
+ 431        PROC SGPLOT DATA = malib.Diabete_Fin; SCATTER Y = glyhb X = age;
+ 432        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.09 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              1942.68k
+       OS Memory           43568.00k
+       Timestamp           21/04/2024 05:36:14 PM
+       Step Count                        70  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     292
+       Page Swaps                        0
+       Voluntary Context Switches        186
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           432
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 433        
+ 434        Proc sgpanel data=malib.Diabete_Fin nocycleattrs;
+ 435        panelby age_code / layout=columnlattice onepanel colheaderpos=bottom novarname;
+ 436        vbox glyhb;  run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.23 seconds
+       user cpu time       0.10 seconds
+       system cpu time     0.02 seconds
+       memory              3701.07k
+       OS Memory           44472.00k
+       Timestamp           21/04/2024 05:36:15 PM
+       Step Count                        71  Switch Count  50
+       Page Faults                       0
+       Page Reclaims                     1396
+       Page Swaps                        0
+       Voluntary Context Switches        758
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           3536
+       
+ WARNING: The font <sans-serif> is not available. Albany AMT will be used.
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 437        
+ 438        
+ 439        /* -------------------ANALYSE DE VARIANCE et Ttest -------------------*/
+ 440        
+ 441        /* Test de comparaison de moyenne
+ 442        
+ 443        -Verification des hypothèses de normalité en traçant la distribution de la gaussienne associée à la variable
+ 444        quantitative
+ 445        - Si normalité, verification du plan equilibré
+ 446        */
+ 447        
+ 448        
+ 449        /*----------- ANALYSE DE L'INFLUENCE DU GENRE SUR L'HEMOGLOBINE ------------- */
+ 450        
+ 451        
+ 452        proc means data= malib.diabete_fin mean std; /* Plan equilibré */
+ 453        class gender ;
+ 454        var glyhb;
+ 455        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE MEANS a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              8996.20k
+       OS Memory           51900.00k
+       Timestamp           21/04/2024 05:36:15 PM
+       Step Count                        72  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     2058
+       Page Swaps                        0
+       Voluntary Context Switches        13
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           16
+       
+ 
+ 456        
+ 457        proc univariate normal data=malib.diabete_fin;
+ 458        var glyhb; class gender ; run;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.08 seconds
+       user cpu time       0.09 seconds
+       system cpu time     0.00 seconds
+       memory              951.37k
+       OS Memory           43432.00k
+       Timestamp           21/04/2024 05:36:15 PM
+       Step Count                        73  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     104
+       Page Swaps                        0
+       Voluntary Context Switches        1
+       Involuntary Context Switches      1
+       Block Input Operations            0
+       Block Output Operations           56
+       
+ 
+ 459        
+ 460        proc sgpanel data=malib.diabete_fin;
+ 461        panelby gender / layout=columnlattice onepanel colheaderpos=bottom novarname;
+ 462        histogram glyhb ;
+ 463        density glyhb;/* Pas de distribution normale donc impossible d'effectuer le Ttest
+ 464        On effectue un test de Man-Withney
+ 465        */
+ 466        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.22 seconds
+       user cpu time       0.07 seconds
+       system cpu time     0.02 seconds
+       memory              3482.03k
+       OS Memory           45240.00k
+       Timestamp           21/04/2024 05:36:15 PM
+       Step Count                        74  Switch Count  26
+       Page Faults                       0
+       Page Reclaims                     927
+       Page Swaps                        0
+       Voluntary Context Switches        1399
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           1952
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 467        
+ 468        
+ 469        proc sgpanel data=malib.diabete_fin;
+ 470        panelby gender / layout=columnlattice onepanel colheaderpos=bottom novarname;
+ 471        vbox glyhb ;
+ 472        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.12 seconds
+       user cpu time       0.06 seconds
+       system cpu time     0.01 seconds
+       memory              3277.15k
+       OS Memory           45240.00k
+       Timestamp           21/04/2024 05:36:15 PM
+       Step Count                        75  Switch Count  26
+       Page Faults                       0
+       Page Reclaims                     933
+       Page Swaps                        0
+       Voluntary Context Switches        772
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           1856
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 473        
+ 474        
+ 475        
+ 476        /*test de Man-Withney*/
+ 477        
+ 478        proc npar1way data=malib.diabete_fin wilcoxon;
+ 479            class gender;
+ 480            var glyhb;
+ 481        run;
+ 
+ NOTE: PROCEDURE NPAR1WAY a utilisé (Durée totale du traitement) :
+       real time           0.16 seconds
+       user cpu time       0.06 seconds
+       system cpu time     0.01 seconds
+       memory              3247.93k
+       OS Memory           44596.00k
+       Timestamp           21/04/2024 05:36:15 PM
+       Step Count                        76  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     788
+       Page Swaps                        0
+       Voluntary Context Switches        312
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           664
+       
+ 
+ 482        
+ 483        /* Pas de différence significatives entre hommes et femmes */
+ 484        
+ 485        /* ----------- Analyse hémoglobine et age -------------- */
+ 486        proc sgplot data=malib.Diabete_Fin;
+ 487        histogram glyhb;
+ 488        density glyhb;
+ 489        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.08 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              2262.59k
+       OS Memory           44592.00k
+       Timestamp           21/04/2024 05:36:15 PM
+       Step Count                        77  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     334
+       Page Swaps                        0
+       Voluntary Context Switches        217
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           504
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 490        
+ 491        proc univariate normal data=malib.diabete_fin;
+ 492        var glyhb ; run;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.04 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              1035.18k
+       OS Memory           43688.00k
+       Timestamp           21/04/2024 05:36:15 PM
+       Step Count                        78  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     58
+       Page Swaps                        0
+       Voluntary Context Switches        1
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           32
+       
+ 
+ 493        /* Pas de normalité des sous échantillon donc test de Test de Kruskal et Wallis*/
+ 494        
+ 495        title "Distribution de l'hémoglobine glyquée en fonction des tranches d'age et test de normalité";
+ 496        proc sgpanel data=malib.diabete_fin;
+ 497        panelby age_code / columns= 3;
+ 498        histogram glyhb ;
+ 499        density glyhb;
+ 500        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.27 seconds
+       user cpu time       0.09 seconds
+       system cpu time     0.01 seconds
+       memory              3583.40k
+       OS Memory           45752.00k
+       Timestamp           21/04/2024 05:36:16 PM
+       Step Count                        79  Switch Count  50
+       Page Faults                       0
+       Page Reclaims                     1397
+       Page Swaps                        0
+       Voluntary Context Switches        517
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           3784
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 501        title;
+ 502        
+ 503        
+ 504        /*La statistique h va suivre un khi2(5) car on a 6 classes */
+ 505        proc npar1way data=malib.diabete_fin;
+ 506        class age_code;
+ 507        var glyhb;
+ 508        run;
+ 
+ NOTE: PROCEDURE NPAR1WAY a utilisé (Durée totale du traitement) :
+       real time           0.74 seconds
+       user cpu time       0.35 seconds
+       system cpu time     0.03 seconds
+       memory              4357.43k
+       OS Memory           46132.00k
+       Timestamp           21/04/2024 05:36:16 PM
+       Step Count                        80  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1676
+       Page Swaps                        0
+       Voluntary Context Switches        3828
+       Involuntary Context Switches      2
+       Block Input Operations            0
+       Block Output Operations           2560
+       
+ 
+ 509        /* la pvalue < .001 < .05 (seuil), on ne peut accepter l'hypothèse nulle (moyennes des classes ==)
+ 510        Donc l'âge afflut sur l'apparition d'un diabète de type
+ 511         */
+ 512        
+ 513        
+ 514        /* ANALYSE IMC ET AGE */
+ 515        
+ 516        
+ 517        proc univariate normal data=malib.diabete_fin;
+ 518        var imc;  run;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.04 seconds
+       user cpu time       0.05 seconds
+       system cpu time     0.00 seconds
+       memory              894.53k
+       OS Memory           44968.00k
+       Timestamp           21/04/2024 05:36:16 PM
+       Step Count                        81  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     55
+       Page Swaps                        0
+       Voluntary Context Switches        1
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           32
+       
+ 
+ 519        
+ 520        title "Visualisation d'une présence ou non d'une distribution normale pour la variable d'hémoglobine glyquée";
+ 521        proc sgplot data=malib.Diabete_Fin;
+ 522        histogram imc;
+ 523        density imc;
+ 524        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.09 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              2181.43k
+       OS Memory           45872.00k
+       Timestamp           21/04/2024 05:36:16 PM
+       Step Count                        82  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     301
+       Page Swaps                        0
+       Voluntary Context Switches        217
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           520
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 525        title;
+ 526        
+ 527        title "Distribution de l'IMC en fonction des tranches d'age et test de normalité";
+ 528        proc sgpanel data=malib.diabete_fin;
+ 529        panelby age_code / columns= 1;
+ 530        histogram IMC ;
+ 531        density IMC;
+ 532        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.42 seconds
+       user cpu time       0.15 seconds
+       system cpu time     0.03 seconds
+       memory              3708.43k
+       OS Memory           46776.00k
+       Timestamp           21/04/2024 05:36:17 PM
+       Step Count                        83  Switch Count  50
+       Page Faults                       0
+       Page Reclaims                     1771
+       Page Swaps                        0
+       Voluntary Context Switches        884
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           4232
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 533        title;
+ 534        
+ 535        title "verification des hypothèse d'équilibre";
+ 536        proc means data=malib.diabete_fin std mean ;
+ 537        class age_code;
+ 538        var imc;
+ 539        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE MEANS a utilisé (Durée totale du traitement) :
+       real time           0.02 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              8991.46k
+       OS Memory           52924.00k
+       Timestamp           21/04/2024 05:36:17 PM
+       Step Count                        84  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     1960
+       Page Swaps                        0
+       Voluntary Context Switches        14
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           16
+       
+ 
+ 539      !      /*Pas de plan equilibré */
+ 540        title;
+ 541        
+ 542        
+ 543        proc npar1way  data=malib.Diabete_Fin;
+ 544        class age_code; var imc; run;
+ 
+ NOTE: PROCEDURE NPAR1WAY a utilisé (Durée totale du traitement) :
+       real time           0.65 seconds
+       user cpu time       0.35 seconds
+       system cpu time     0.03 seconds
+       memory              4151.12k
+       OS Memory           46644.00k
+       Timestamp           21/04/2024 05:36:18 PM
+       Step Count                        85  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1672
+       Page Swaps                        0
+       Voluntary Context Switches        3780
+       Involuntary Context Switches      1
+       Block Input Operations            0
+       Block Output Operations           2720
+       
+ 
+ 545        
+ 546        
+ 547        /* -------- Analyse de variance pour l'imc en fonction de la tension arterielle ------- */
+ 548        Proc sgpanel data=malib.Diabete_Fin nocycleattrs;
+ 549        panelby bp_code / layout=columnlattice onepanel colheaderpos=bottom ;
+ 550        vbox imc ; run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.16 seconds
+       user cpu time       0.06 seconds
+       system cpu time     0.02 seconds
+       memory              3100.34k
+       OS Memory           47032.00k
+       Timestamp           21/04/2024 05:36:18 PM
+       Step Count                        86  Switch Count  38
+       Page Faults                       0
+       Page Reclaims                     1106
+       Page Swaps                        0
+       Voluntary Context Switches        565
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           2440
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 551        
+ 552        
+ 553        title "verification des hypothèse d'équilibre";
+ 554        proc means data=malib.diabete_fin std mean ;
+ 555        class bp_code;
+ 556        var imc;
+ 557        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE MEANS a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.01 seconds
+       memory              8987.79k
+       OS Memory           53436.00k
+       Timestamp           21/04/2024 05:36:18 PM
+       Step Count                        87  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     1953
+       Page Swaps                        0
+       Voluntary Context Switches        14
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           0
+       
+ 
+ 557      !      /*Pas de plan equilibré */
+ 558        title;
+ 559        
+ 560        proc univariate normal data=malib.diabete_fin;
+ 561        var imc;  run;
+ 
+ NOTE: PROCEDURE UNIVARIATE a utilisé (Durée totale du traitement) :
+       real time           0.04 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              894.87k
+       OS Memory           44968.00k
+       Timestamp           21/04/2024 05:36:18 PM
+       Step Count                        88  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     58
+       Page Swaps                        0
+       Voluntary Context Switches        2
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           24
+       
+ 
+ 562        
+ 563        proc sgplot data=malib.Diabete_Fin;
+ 564        histogram imc;
+ 565        density imc;
+ 566        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.08 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              2296.17k
+       OS Memory           45872.00k
+       Timestamp           21/04/2024 05:36:18 PM
+       Step Count                        89  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     304
+       Page Swaps                        0
+       Voluntary Context Switches        216
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           512
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 567        
+ 568        title "Distribution de l'IMC en fonction des catégories de tension arterielle et test de normalité";
+ 569        proc sgpanel data=malib.diabete_fin;
+ 570        panelby bp_code / layout=columnlattice onepanel colheaderpos=bottom novarname;
+ 571        histogram IMC ;
+ 572        density IMC;
+ 573        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.23 seconds
+       user cpu time       0.08 seconds
+       system cpu time     0.01 seconds
+       memory              3587.96k
+       OS Memory           46776.00k
+       Timestamp           21/04/2024 05:36:18 PM
+       Step Count                        90  Switch Count  38
+       Page Faults                       0
+       Page Reclaims                     1143
+       Page Swaps                        0
+       Voluntary Context Switches        454
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           2680
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 574        title;
+ 575        
+ 576        proc npar1way  data=malib.Diabete_Fin;
+ 577        class bp_code; var imc; run;
+ 
+ NOTE: PROCEDURE NPAR1WAY a utilisé (Durée totale du traitement) :
+       real time           0.59 seconds
+       user cpu time       0.33 seconds
+       system cpu time     0.03 seconds
+       memory              4019.06k
+       OS Memory           46644.00k
+       Timestamp           21/04/2024 05:36:19 PM
+       Step Count                        91  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     1634
+       Page Swaps                        0
+       Voluntary Context Switches        3229
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           2432
+       
+ 
+ 578        
+ 579        /* Seule l'influence de la pression est visible */
+ 580        Proc sgpanel data=malib.Diabete_Fin nocycleattrs;
+ 581        panelby age_code / layout=columnlattice onepanel colheaderpos=bottom novarname;
+ 582        vbox imc / group= bp_code; run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.21 seconds
+       user cpu time       0.08 seconds
+       system cpu time     0.02 seconds
+       memory              3356.75k
+       OS Memory           47032.00k
+       Timestamp           21/04/2024 05:36:19 PM
+       Step Count                        92  Switch Count  50
+       Page Faults                       0
+       Page Reclaims                     1292
+       Page Swaps                        0
+       Voluntary Context Switches        1282
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           3616
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 583        
+ 584        /*=============================================================================*/
+ 585        
+ 586        /* ANALYSE DESCRIPTIVES DEUX VARIABLES QUANTITATIVES*/
+ 587        
+ 588        /* On regarde les corrélations de l'hémoglobine avec certaines variables */
+ 589        
+ 590        proc corr data=malib.diabete_fin ;
+ 591        var glyhb hdl bp_1s bp_1d ratio_wh IMC chol;
+ 592        run;
+ 
+ NOTE: PROCEDURE CORR a utilisé (Durée totale du traitement) :
+       real time           0.06 seconds
+       user cpu time       0.07 seconds
+       system cpu time     0.00 seconds
+       memory              1261.25k
+       OS Memory           45480.00k
+       Timestamp           21/04/2024 05:36:19 PM
+       Step Count                        93  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     130
+       Page Swaps                        0
+       Voluntary Context Switches        1
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           24
+       
+ 
+ 593        /* D'un point de vue maladie diabète : corr significative avec le HDL, pression_S, ratio_WH ++, IMC
+ 594        en revanche la pression_D n'est pas corr
+ 595        - HDL a pas de corr signif avec les pressions */
+ 596        
+ 597        
+ 598        proc sgplot data=malib.diabete_fin;
+ 599        scatter X = age Y = glyhb ;
+ 600        reg x=age y=glyhb;
+ 601        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.13 seconds
+       user cpu time       0.07 seconds
+       system cpu time     0.00 seconds
+       memory              3080.96k
+       OS Memory           47528.00k
+       Timestamp           21/04/2024 05:36:19 PM
+       Step Count                        94  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     688
+       Page Swaps                        0
+       Voluntary Context Switches        217
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           696
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 602        /* Graphe qui montre la présence d'aucune relation (linéaire ou pas) entre HDL et tension */
+ 603        proc sgplot data=malib.diabete_fin;
+ 604        scatter X = bp_1s Y = hdl ;
+ 605        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.09 seconds
+       user cpu time       0.05 seconds
+       system cpu time     0.00 seconds
+       memory              1447.81k
+       OS Memory           47664.00k
+       Timestamp           21/04/2024 05:36:19 PM
+       Step Count                        95  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     432
+       Page Swaps                        0
+       Voluntary Context Switches        184
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           512
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 606        
+ 607        proc sgplot data=malib.diabete_fin;
+ 608        scatter X = bp_1d Y = hdl ;
+ 609        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.08 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.01 seconds
+       memory              2248.87k
+       OS Memory           47920.00k
+       Timestamp           21/04/2024 05:36:19 PM
+       Step Count                        96  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     377
+       Page Swaps                        0
+       Voluntary Context Switches        186
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           464
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 610        
+ 611        /*------------*/
+ 612        proc sgplot data=malib.diabete_fin;
+ 613        scatter X = bp_1s Y = glyhb ;
+ 614        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.08 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              2104.21k
+       OS Memory           47920.00k
+       Timestamp           21/04/2024 05:36:19 PM
+       Step Count                        97  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     333
+       Page Swaps                        0
+       Voluntary Context Switches        185
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           472
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 615        
+ 616        proc sgplot data=malib.diabete_fin;
+ 617        scatter X = hdl Y = glyhb ;
+ 618        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.08 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.01 seconds
+       memory              2263.43k
+       OS Memory           48176.00k
+       Timestamp           21/04/2024 05:36:20 PM
+       Step Count                        98  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     379
+       Page Swaps                        0
+       Voluntary Context Switches        184
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           480
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 619        
+ 620        proc sgplot data=malib.diabete_fin;
+ 621        scatter X = bp_1d Y = glyhb ;
+ 622        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.08 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.01 seconds
+       memory              2104.25k
+       OS Memory           47920.00k
+       Timestamp           21/04/2024 05:36:20 PM
+       Step Count                        99  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     331
+       Page Swaps                        0
+       Voluntary Context Switches        184
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           472
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 623        
+ 624        proc sgplot data=malib.diabete_fin;
+ 625        scatter X = ratio_wh Y = chol ;
+ 626        run;
+ 
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.08 seconds
+       user cpu time       0.04 seconds
+       system cpu time     0.00 seconds
+       memory              2103.75k
+       OS Memory           47920.00k
+       Timestamp           21/04/2024 05:36:20 PM
+       Step Count                        100  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     333
+       Page Swaps                        0
+       Voluntary Context Switches        186
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           464
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 627        
+ 628        proc sgplot data=malib.diabete_fin;
+ 629        scatter X = ratio_wh Y = glyhb / group=gender ;
+ 630        run;
+ 
+ 630      !      /* Interpretation : dès que le ratio est superieur à .8
+ NOTE: PROCEDURE SGPLOT a utilisé (Durée totale du traitement) :
+       real time           0.12 seconds
+       user cpu time       0.05 seconds
+       system cpu time     0.01 seconds
+       memory              2259.28k
+       OS Memory           48176.00k
+       Timestamp           21/04/2024 05:36:20 PM
+       Step Count                        101  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     380
+       Page Swaps                        0
+       Voluntary Context Switches        1320
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           504
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 631        il y a une présence d'individus avec un fort pourcentage d'hemoglobine
+ 632        Dommage on peut pas tracer de vline x = .8*/
+ 633        
+ 634        
+ 635        
+ 636        /*=============================================================================*/
+ 637        
+ 638        /* ANALYSE DESCRIPTIVES DEUX VARIABLES QUALITATIVES*/
+ 639        
+ 640        title "Proportion des individus en fonction du genre et de la classe IMC";
+ 641        proc sgpanel data=malib.diabete_fin;
+ 642        panelby gender;
+ 643        vbar imc_code ;
+ 644        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.17 seconds
+       user cpu time       0.06 seconds
+       system cpu time     0.01 seconds
+       memory              3426.46k
+       OS Memory           49080.00k
+       Timestamp           21/04/2024 05:36:20 PM
+       Step Count                        102  Switch Count  16
+       Page Faults                       0
+       Page Reclaims                     1005
+       Page Swaps                        0
+       Voluntary Context Switches        322
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           1344
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 645        title;
+ 646        /*présence d'obésité / surpoids plus important chez les femmes que chez les hommes */
+ 647        
+ 648        proc freq data=malib.diabete_fin;
+ 649        tables IMC_code * gender / norow nocol nopercent;
+ 650        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE FREQ a utilisé (Durée totale du traitement) :
+       real time           0.02 seconds
+       user cpu time       0.02 seconds
+       system cpu time     0.00 seconds
+       memory              1349.78k
+       OS Memory           47536.00k
+       Timestamp           21/04/2024 05:36:20 PM
+       Step Count                        103  Switch Count  4
+       Page Faults                       0
+       Page Reclaims                     317
+       Page Swaps                        0
+       Voluntary Context Switches        25
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           536
+       
+ 
+ 651        
+ 652        
+ 653        title "Proportion des individus en fonction du genre et de la classe de pression";
+ 654        proc sgpanel data=malib.diabete_fin;
+ 655        panelby gender;
+ 656        vbar bp_code ;
+ 657        run;
+ 
+ NOTE: PROCEDURE SGPANEL a utilisé (Durée totale du traitement) :
+       real time           0.14 seconds
+       user cpu time       0.05 seconds
+       system cpu time     0.00 seconds
+       memory              3163.43k
+       OS Memory           49336.00k
+       Timestamp           21/04/2024 05:36:20 PM
+       Step Count                        104  Switch Count  16
+       Page Faults                       0
+       Page Reclaims                     1045
+       Page Swaps                        0
+       Voluntary Context Switches        312
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           1304
+       
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ 
+ 658        title;
+ 659        
+ 660        proc freq data=malib.diabete_fin;
+ 661        tables bp_code * gender / norow nocol nopercent;
+ 662        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE FREQ a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.02 seconds
+       system cpu time     0.01 seconds
+       memory              1229.65k
+       OS Memory           47792.00k
+       Timestamp           21/04/2024 05:36:20 PM
+       Step Count                        105  Switch Count  4
+       Page Faults                       0
+       Page Reclaims                     267
+       Page Swaps                        0
+       Voluntary Context Switches        27
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           536
+       
+ 
+ 663        
+ 664        /*Tension arterielle de stade 2 pour plus de femmes*/
+ 665        
+ 666        
+ 667        /* Différents tableaux de contingences pour les variables qualitatives + khi 2 d'indépendance */
+ 668        
+ 669        proc freq data=malib.diabete_fin;
+ 670        tables gender*IMC_code / chisq plots = freqplot;
+ 671        tables gender*Bp_code / chisq plots = freqplot;
+ 672        tables IMC_code*Bp_code/ chisq plots = freqplot;
+ 673        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE FREQ a utilisé (Durée totale du traitement) :
+       real time           0.62 seconds
+       user cpu time       0.27 seconds
+       system cpu time     0.01 seconds
+       memory              3732.06k
+       OS Memory           48952.00k
+       Timestamp           21/04/2024 05:36:21 PM
+       Step Count                        106  Switch Count  4
+       Page Faults                       0
+       Page Reclaims                     1259
+       Page Swaps                        0
+       Voluntary Context Switches        1192
+       Involuntary Context Switches      1
+       Block Input Operations            0
+       Block Output Operations           1568
+       
+ 
+ 674        
+ 675        /* data malib.diabete_fin_bp_code */
+ 676        
+ 677        
+ 678        
+ 679        /* reg log avec chol hdl  */
+ 680        
+ 681        proc logistic data=malib.diabete_fin desc ;
+ 682        format Bp_code;
+ 683        
+ 684           class Bp_code ;
+ 685           class gender (ref = 'male') / PARAM = REFERENCE;
+ 686           model Bp_code = chol hdl stab_glu glyhb age gender IMC ratio_WH / selection=backward ;
+ 687        
+ 688        run;
+ 
+ NOTE: PROC LOGISTIC is fitting the logit cumulé model. The probabilities modeled are summed over the responses having the lower 
+       Ordered Values in the Response Profile table.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 0.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 1.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 2.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 3.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 4.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 5.
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE LOGISTIC a utilisé (Durée totale du traitement) :
+       real time           0.20 seconds
+       user cpu time       0.20 seconds
+       system cpu time     0.00 seconds
+       memory              2555.00k
+       OS Memory           48568.00k
+       Timestamp           21/04/2024 05:36:21 PM
+       Step Count                        107  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     540
+       Page Swaps                        0
+       Voluntary Context Switches        2
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           136
+       
+ 
+ 689        
+ 690        /* on enlève col hdl pour remplacer par le ratio  */
+ 691        
+ 692        proc logistic data=malib.diabete_fin desc ;
+ 693        format Bp_code;
+ 694        
+ 695           class Bp_code ;
+ 696           class gender (ref = 'male') / PARAM = REFERENCE;
+ 697           model Bp_code = ratio stab_glu glyhb age gender IMC ratio_WH / selection=backward ;
+ 698        
+ 699        run;
+ 
+ NOTE: PROC LOGISTIC is fitting the logit cumulé model. The probabilities modeled are summed over the responses having the lower 
+       Ordered Values in the Response Profile table.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 0.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 1.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 2.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 3.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 4.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 5.
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE LOGISTIC a utilisé (Durée totale du traitement) :
+       real time           0.19 seconds
+       user cpu time       0.20 seconds
+       system cpu time     0.00 seconds
+       memory              2541.96k
+       OS Memory           48568.00k
+       Timestamp           21/04/2024 05:36:21 PM
+       Step Count                        108  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     254
+       Page Swaps                        0
+       Voluntary Context Switches        1
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           152
+       
+ 
+ 700        
+ 701        /* on essaie avec ratio chol hdl  */
+ 702        
+ 703        proc logistic data=malib.diabete_fin desc ;
+ 704        format Bp_code;
+ 705        
+ 706           class Bp_code ;
+ 707           class gender (ref = 'male') / PARAM = REFERENCE;
+ 708           model Bp_code = ratio chol hdl stab_glu glyhb age gender IMC ratio_WH / selection=backward ;
+ 709        
+ 710        run;
+ 
+ NOTE: PROC LOGISTIC is fitting the logit cumulé model. The probabilities modeled are summed over the responses having the lower 
+       Ordered Values in the Response Profile table.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 0.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 1.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 2.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 3.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 4.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied in Step 5.
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE LOGISTIC a utilisé (Durée totale du traitement) :
+       real time           0.19 seconds
+       user cpu time       0.19 seconds
+       system cpu time     0.01 seconds
+       memory              2499.31k
+       OS Memory           48824.00k
+       Timestamp           21/04/2024 05:36:21 PM
+       Step Count                        109  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     254
+       Page Swaps                        0
+       Voluntary Context Switches        1
+       Involuntary Context Switches      1
+       Block Input Operations            0
+       Block Output Operations           128
+       
+ 
+ 711        
+ 712        /* --> Mais probablement ajout de colinéarité trop importante  */
+ 713        
+ 714        /* summary IMC  */
+ 715        
+ 716        proc means data = malib.Diabete_Fin;
+ 717        var IMC;
+ 718        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE MEANS a utilisé (Durée totale du traitement) :
+       real time           0.01 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              6905.96k
+       OS Memory           53964.00k
+       Timestamp           21/04/2024 05:36:21 PM
+       Step Count                        110  Switch Count  1
+       Page Faults                       0
+       Page Reclaims                     1692
+       Page Swaps                        0
+       Voluntary Context Switches        20
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           8
+       
+ 
+ 719        
+ 720        /* deux modèles différents + estimation des proba pour les interprétations */
+ 721        
+ 722        proc logistic data=malib.diabete_fin desc ;
+ 723        format Bp_code;
+ 724        
+ 725           class Bp_code ;
+ 726           model Bp_code =  hdl   age  IMC  ;
+ 727           estimate "Pr prob Bp_code = 4 at hdl=50" intercept 1 hdl 50 age 46 IMC 28.83 / ilink category='4';
+ 728           estimate "Pr prob Bp_code = 4 at hdl=70" intercept 1 hdl 70 age 46 IMC 28.83 / ilink category='4';
+ 729           estimate "Pr prob Bp_code >=3 at hdl=50" intercept 1 hdl 50 age 46 IMC 28.83 / ilink category='3';
+ 730           estimate "Pr prob Bp_code >=3 at hdl=70" intercept 1 hdl 70 age 46 IMC 28.83 / ilink category='3';
+ 731           estimate "Pr prob Bp_code >=2 at hdl=50" intercept 1 hdl 50 age 46 IMC 28.83 / ilink category='2';
+ 732           estimate "Pr prob Bp_code >=2 at hdl=70" intercept 1 hdl 70 age 46 IMC 28.83 / ilink category='2';
+ 733        
+ 734        run;
+ 
+ NOTE: PROC LOGISTIC is fitting the logit cumulé model. The probabilities modeled are summed over the responses having the lower 
+       Ordered Values in the Response Profile table.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied.
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE LOGISTIC a utilisé (Durée totale du traitement) :
+       real time           0.10 seconds
+       user cpu time       0.10 seconds
+       system cpu time     0.01 seconds
+       memory              2586.75k
+       OS Memory           48824.00k
+       Timestamp           21/04/2024 05:36:22 PM
+       Step Count                        111  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     371
+       Page Swaps                        0
+       Voluntary Context Switches        1
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           96
+       
+ 
+ 735        
+ 736        proc logistic data=malib.diabete_fin desc ;
+ 737        format Bp_code;
+ 738        
+ 739           class Bp_code ;
+ 740           model Bp_code =  age  IMC  ;
+ 741           estimate "Pr prob Bp_code = 4 at hdl=50" intercept 1 age 46 IMC 28.83 / ilink category='4';
+ 742           estimate "Pr prob Bp_code = 4 at hdl=70" intercept 1 age 46 IMC 35 / ilink category='4';
+ 743           estimate "Pr prob Bp_code >=3 at hdl=50" intercept 1 age 46 IMC 28.83 / ilink category='3';
+ 744           estimate "Pr prob Bp_code >=3 at hdl=70" intercept 1 age 46 IMC 35 / ilink category='3';
+ 745           estimate "Pr prob Bp_code >=2 at hdl=50" intercept 1 age 46 IMC 28.83 / ilink category='2';
+ 746           estimate "Pr prob Bp_code >=2 at hdl=70" intercept 1 age 46 IMC 35 / ilink category='2';
+ 747        
+ 748        run;
+ 
+ NOTE: PROC LOGISTIC is fitting the logit cumulé model. The probabilities modeled are summed over the responses having the lower 
+       Ordered Values in the Response Profile table.
+ NOTE: Convergence criterion (GCONV=1E-8) satisfied.
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: PROCEDURE LOGISTIC a utilisé (Durée totale du traitement) :
+       real time           0.10 seconds
+       user cpu time       0.10 seconds
+       system cpu time     0.00 seconds
+       memory              2568.40k
+       OS Memory           49080.00k
+       Timestamp           21/04/2024 05:36:22 PM
+       Step Count                        112  Switch Count  0
+       Page Faults                       0
+       Page Reclaims                     244
+       Page Swaps                        0
+       Voluntary Context Switches        1
+       Involuntary Context Switches      1
+       Block Input Operations            0
+       Block Output Operations           96
+       
+ 
+ 749        
+ 750        /* Régression linéaire */
+ 751        
+ 752        proc reg data=malib.diabete_fin;
+ 753        model glyhb = chol hdl stab_glu age ratio_WH height weight bp_1s bp_1d / selection=backward;
+ 754        
+ 755        run;
+ 
+ 756        
+ 
+ NOTE: PROCEDURE REG a utilisé (Durée totale du traitement) :
+       real time           0.78 seconds
+       user cpu time       0.41 seconds
+       system cpu time     0.03 seconds
+       memory              11697.09k
+       OS Memory           56804.00k
+       Timestamp           21/04/2024 05:36:22 PM
+       Step Count                        113  Switch Count  22
+       Page Faults                       0
+       Page Reclaims                     13021
+       Page Swaps                        0
+       Voluntary Context Switches        895
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           1896
+       
+ 
+ 757        data __;
+ 758        set malib.diabete_fin;
+ 759        run;
+ 
+ NOTE: There were 375 observations read from the data set MALIB.DIABETE_FIN.
+ NOTE: The data set WORK.__ has 375 observations and 22 variables.
+ NOTE: DATA statement a utilisé (Durée totale du traitement) :
+       real time           0.00 seconds
+       user cpu time       0.01 seconds
+       system cpu time     0.00 seconds
+       memory              1012.06k
+       OS Memory           51116.00k
+       Timestamp           21/04/2024 05:36:22 PM
+       Step Count                        114  Switch Count  2
+       Page Faults                       0
+       Page Reclaims                     119
+       Page Swaps                        0
+       Voluntary Context Switches        19
+       Involuntary Context Switches      0
+       Block Input Operations            0
+       Block Output Operations           264
+       
+ 
+ 760        
+ 761        
+ 762        ods pdf close;
+ NOTE: ODS PDF printed 136 pages to /home/u63585891/Diabete_project/Rapport.pdf.
+ 763        
+ 764        
+ 765        
+ 766        
+ 767        OPTIONS NONOTES NOSTIMER NOSOURCE NOSYNTAXCHECK;
+ 777        
